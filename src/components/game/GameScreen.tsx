@@ -39,44 +39,53 @@ const milestoneMessages: Record<number, string> = {
 interface QuestionConfig {
   hearts: number;
   title: string;
+  subtitle?: string;
   options: { label: string; emoji?: string; isCorrect?: boolean }[];
   requireCorrect?: boolean;
+  autoSelectIndex?: number; // Auto-select this option after delay
 }
 
 const questions: QuestionConfig[] = [
   {
     hearts: 30,
     title: "Quick Question",
+    subtitle: "Who jumps better?",
     options: [
       { label: "The horse", emoji: "🐴" },
-      { label: "Me thinking about you", emoji: "💭", isCorrect: true },
+      { label: "Me thinking about you", emoji: "💭" },
     ],
+    autoSelectIndex: 1, // Auto-select second option
   },
   {
     hearts: 45,
     title: "Very Serious Question",
+    subtitle: "Who wins at chess?",
     options: [
       { label: "You", emoji: "♟️" },
       { label: "Me (after pretending I don't know how to play)", emoji: "😏" },
     ],
+    // Accept either - no requireCorrect
   },
   {
     hearts: 60,
     title: "Important Survey",
+    subtitle: "Pick one:",
     options: [
       { label: "Pizza dates", emoji: "🍕" },
       { label: "Long walks", emoji: "🌙" },
       { label: "You + Me + Both", emoji: "💕", isCorrect: true },
     ],
-    requireCorrect: true,
+    requireCorrect: true, // Only "You + Me + Both" proceeds
   },
   {
     hearts: 85,
     title: "Be honest…",
+    subtitle: "Are you smiling right now?",
     options: [
       { label: "Yes", emoji: "😊" },
       { label: "Definitely yes", emoji: "🥰" },
     ],
+    // Accept either - no requireCorrect
   },
 ];
 
@@ -374,10 +383,12 @@ const GameScreen = memo(({ onComplete }: GameScreenProps) => {
       {currentQuestion && (
         <QuestionModal
           title={currentQuestion.title}
+          subtitle={currentQuestion.subtitle}
           options={currentQuestion.options}
           onAnswer={handleQuestionAnswer}
           isVisible={true}
           requireCorrect={currentQuestion.requireCorrect}
+          autoSelectIndex={currentQuestion.autoSelectIndex}
         />
       )}
 
