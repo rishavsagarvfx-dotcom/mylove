@@ -5,9 +5,10 @@ interface HorseProps {
   isJumping: boolean;
   isRunning: boolean;
   isCelebrating?: boolean;
+  hasBlush?: boolean;
 }
 
-const Horse = memo(({ isJumping, isRunning, isCelebrating }: HorseProps) => {
+const Horse = memo(({ isJumping, isRunning, isCelebrating, hasBlush }: HorseProps) => {
   let animationClass = 'horse-idle';
   
   if (isJumping) {
@@ -27,8 +28,21 @@ const Horse = memo(({ isJumping, isRunning, isCelebrating }: HorseProps) => {
         src={horseImage} 
         alt="Cute pink horse" 
         className="w-full h-full object-contain drop-shadow-lg"
-        // Horse now faces right (original orientation)
       />
+      
+      {/* Blush marks at 100 hearts */}
+      {hasBlush && (
+        <>
+          <div 
+            className="absolute top-[45%] left-[25%] w-4 h-2 rounded-full opacity-60"
+            style={{ background: 'hsl(350, 80%, 70%)' }}
+          />
+          <div 
+            className="absolute top-[45%] right-[25%] w-4 h-2 rounded-full opacity-60"
+            style={{ background: 'hsl(350, 80%, 70%)' }}
+          />
+        </>
+      )}
       
       {/* Sparkle trail when jumping */}
       {isJumping && (

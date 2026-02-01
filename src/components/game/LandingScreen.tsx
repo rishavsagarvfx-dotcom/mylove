@@ -13,7 +13,7 @@ const LandingScreen = memo(({ onStart }: LandingScreenProps) => {
     <div className="relative min-h-screen w-full overflow-hidden bg-valentine-sky flex flex-col items-center justify-center px-4">
       {/* Background decorations */}
       <Cloud left="5%" top="10%" size="lg" delay={0} text="love" />
-      <Cloud left="75%" top="8%" size="md" delay={1} text="mine" />
+      <Cloud left="75%" top="8%" size="md" delay={1} text="yours" />
       <Cloud left="85%" top="25%" size="sm" delay={2} />
       <Cloud left="15%" top="30%" size="md" delay={0.5} text="always" />
       <Cloud left="60%" top="35%" size="sm" delay={1.5} />
@@ -42,14 +42,19 @@ const LandingScreen = memo(({ onStart }: LandingScreenProps) => {
         </div>
 
         {/* Title */}
-        <h1 className="font-display text-4xl md:text-5xl lg:text-6xl text-foreground mb-3 text-shadow-soft">
+        <h1 className="font-display text-4xl md:text-5xl lg:text-6xl text-foreground mb-2 text-shadow-soft">
           Horse Jump, Heart Hunt
         </h1>
-        <span className="text-4xl md:text-5xl mb-6">🐴❤️</span>
+        <span className="text-3xl md:text-4xl mb-4">🐴❤️</span>
 
         {/* Subtitle */}
-        <p className="font-body text-lg md:text-xl text-muted-foreground mb-8 max-w-md">
-          Collect 7 hearts to unlock a very important question.
+        <p className="font-display text-lg md:text-xl text-primary mb-2">
+          A tiny game. A big question.
+        </p>
+
+        {/* Supporting line */}
+        <p className="font-body text-base md:text-lg text-muted-foreground mb-8 max-w-md leading-relaxed">
+          Catch 100 hearts to unlock secrets, smiles, and something I've been wanting to ask you.
         </p>
 
         {/* Start button */}
@@ -57,11 +62,16 @@ const LandingScreen = memo(({ onStart }: LandingScreenProps) => {
           onClick={onStart}
           className="btn-valentine text-xl md:text-2xl animate-wiggle hover:animate-none"
         >
-          Start Game 💖
+          💖 Start Our Little Adventure
         </button>
 
+        {/* Warning micro text */}
+        <p className="mt-4 text-sm text-muted-foreground font-body italic">
+          Warning: may cause blushing.
+        </p>
+
         {/* Control hint */}
-        <p className="mt-6 text-sm text-muted-foreground font-body">
+        <p className="mt-6 text-xs text-muted-foreground/70 font-body">
           Tap or press Space to jump
         </p>
       </div>

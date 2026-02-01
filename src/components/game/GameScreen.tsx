@@ -3,6 +3,9 @@ import Horse from './Horse';
 import CollectibleHeart from './CollectibleHeart';
 import Cloud from './Cloud';
 import FloatingHeart from './FloatingHeart';
+import MilestonePopup from './MilestonePopup';
+import QuestionModal from './QuestionModal';
+import FloatingText from './FloatingText';
 import { Volume2, VolumeX } from 'lucide-react';
 
 interface Heart {
@@ -21,14 +24,61 @@ const HORSE_BOTTOM = GROUND_HEIGHT + 10;
 const JUMP_HEIGHT = 150;
 const JUMP_DURATION = 500;
 const GAME_SPEED = 3;
-const HEARTS_NEEDED = 7;
+const HEARTS_NEEDED = 100;
 
-const progressMessages: Record<number, string> = {
-  1: "okay this is adorable 🥺",
-  3: "you're kinda pro at this 😏",
-  5: "almost there… 💕",
-  6: "one more… one more… 🤞",
+// Milestone messages
+const milestoneMessages: Record<number, string> = {
+  25: "Okay… now I'm smiling. 😊",
+  50: "Halfway there. Still choosing me? 💕",
+  75: "At this point you kinda owe me dinner. 🍕",
+  90: "Don't stop now. My heart's racing. 💓",
+  100: "Alright. You unlocked something important. 🔓",
 };
+
+// Question configs
+interface QuestionConfig {
+  hearts: number;
+  title: string;
+  options: { label: string; emoji?: string; isCorrect?: boolean }[];
+  requireCorrect?: boolean;
+}
+
+const questions: QuestionConfig[] = [
+  {
+    hearts: 30,
+    title: "Quick Question",
+    options: [
+      { label: "The horse", emoji: "🐴" },
+      { label: "Me thinking about you", emoji: "💭", isCorrect: true },
+    ],
+  },
+  {
+    hearts: 45,
+    title: "Very Serious Question",
+    options: [
+      { label: "You", emoji: "♟️" },
+      { label: "Me (after pretending I don't know how to play)", emoji: "😏" },
+    ],
+  },
+  {
+    hearts: 60,
+    title: "Important Survey",
+    options: [
+      { label: "Pizza dates", emoji: "🍕" },
+      { label: "Long walks", emoji: "🌙" },
+      { label: "You + Me + Both", emoji: "💕", isCorrect: true },
+    ],
+    requireCorrect: true,
+  },
+  {
+    hearts: 85,
+    title: "Be honest…",
+    options: [
+      { label: "Yes", emoji: "😊" },
+      { label: "Definitely yes", emoji: "🥰" },
+    ],
+  },
+];
 
 const GameScreen = memo(({ onComplete }: GameScreenProps) => {
   const [heartsCollected, setHeartsCollected] = useState(0);
@@ -36,14 +86,26 @@ const GameScreen = memo(({ onComplete }: GameScreenProps) => {
   const [isJumping, setIsJumping] = useState(false);
   const [horseY, setHorseY] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
-  const [currentMessage, setCurrentMessage] = useState('');
   const [groundOffset, setGroundOffset] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  
+  // Milestone state
+  const [currentMilestone, setCurrentMilestone] = useState<string | null>(null);
+  const [showMilestone, setShowMilestone] = useState(false);
+  
+  // Question state
+  const [currentQuestion, setCurrentQuestion] = useState<QuestionConfig | null>(null);
+  const [answeredQuestions, setAnsweredQuestions] = useState<Set<number>>(new Set());
+  
+  // Near-end effects
+  const [isNearEnd, setIsNearEnd] = useState(false);
   
   const gameLoopRef = useRef<number>();
   const heartIdRef = useRef(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const lastHeartTimeRef = useRef(0);
   const gameContainerRef = useRef<HTMLDivElement>(null);
+  const shownMilestones = useRef<Set<number>>(new Set());
 
   // Initialize audio
   useEffect(() => {
@@ -52,9 +114,7 @@ const GameScreen = memo(({ onComplete }: GameScreenProps) => {
     audioRef.current.volume = 0.3;
     
     if (!isMuted) {
-      audioRef.current.play().catch(() => {
-        // Auto-play blocked, that's okay
-      });
+      audioRef.current.play().catch(() => {});
     }
 
     return () => {
@@ -79,26 +139,65 @@ const GameScreen = memo(({ onComplete }: GameScreenProps) => {
     });
   }, []);
 
-  // Update message based on hearts collected
+  // Check for milestones and questions
   useEffect(() => {
-    if (progressMessages[heartsCollected]) {
-      setCurrentMessage(progressMessages[heartsCollected]);
+    // Check milestones
+    if (milestoneMessages[heartsCollected] && !shownMilestones.current.has(heartsCollected)) {
+      shownMilestones.current.add(heartsCollected);
+      setCurrentMilestone(milestoneMessages[heartsCollected]);
+      setShowMilestone(true);
+      setIsPaused(true);
     }
-  }, [heartsCollected]);
+    
+    // Check questions
+    const question = questions.find(q => q.hearts === heartsCollected);
+    if (question && !answeredQuestions.has(heartsCollected)) {
+      setTimeout(() => {
+        setCurrentQuestion(question);
+        setIsPaused(true);
+      }, showMilestone ? 2800 : 0);
+    }
+    
+    // Near-end effects (hearts pulse, background warms)
+    if (heartsCollected >= 90) {
+      setIsNearEnd(true);
+    }
+  }, [heartsCollected, answeredQuestions, showMilestone]);
+
+  const handleMilestoneDismiss = useCallback(() => {
+    setShowMilestone(false);
+    setCurrentMilestone(null);
+    // Only unpause if no question is pending
+    const question = questions.find(q => q.hearts === heartsCollected);
+    if (!question || answeredQuestions.has(heartsCollected)) {
+      setIsPaused(false);
+    }
+  }, [heartsCollected, answeredQuestions]);
+
+  const handleQuestionAnswer = useCallback((index: number) => {
+    if (!currentQuestion) return;
+    
+    // If requireCorrect, check if correct
+    if (currentQuestion.requireCorrect) {
+      const selected = currentQuestion.options[index];
+      if (!selected.isCorrect) return; // Don't proceed
+    }
+    
+    setAnsweredQuestions(prev => new Set(prev).add(currentQuestion.hearts));
+    setCurrentQuestion(null);
+    setIsPaused(false);
+  }, [currentQuestion]);
 
   // Jump handler
   const handleJump = useCallback(() => {
-    if (isJumping) return;
+    if (isJumping || isPaused) return;
     
     setIsJumping(true);
     
-    // Animate jump up
     const startTime = Date.now();
     const animateJump = () => {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(elapsed / JUMP_DURATION, 1);
-      
-      // Parabolic motion
       const jumpProgress = Math.sin(progress * Math.PI);
       setHorseY(jumpProgress * JUMP_HEIGHT);
       
@@ -111,7 +210,7 @@ const GameScreen = memo(({ onComplete }: GameScreenProps) => {
     };
     
     requestAnimationFrame(animateJump);
-  }, [isJumping]);
+  }, [isJumping, isPaused]);
 
   // Keyboard and touch controls
   useEffect(() => {
@@ -123,6 +222,7 @@ const GameScreen = memo(({ onComplete }: GameScreenProps) => {
     };
 
     const handleTouch = (e: TouchEvent) => {
+      if (isPaused) return;
       e.preventDefault();
       handleJump();
     };
@@ -134,12 +234,12 @@ const GameScreen = memo(({ onComplete }: GameScreenProps) => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('touchstart', handleTouch);
     };
-  }, [handleJump]);
+  }, [handleJump, isPaused]);
 
   // Spawn hearts
   const spawnHeart = useCallback(() => {
     const containerWidth = gameContainerRef.current?.clientWidth || window.innerWidth;
-    const heights = [50, 100, 150, 180]; // Different heights for variety
+    const heights = [50, 100, 150, 180];
     const y = heights[Math.floor(Math.random() * heights.length)];
     
     const newHeart: Heart = {
@@ -154,12 +254,14 @@ const GameScreen = memo(({ onComplete }: GameScreenProps) => {
 
   // Game loop
   useEffect(() => {
+    if (isPaused) return;
+
     const gameLoop = () => {
       const now = Date.now();
       
-      // Spawn hearts periodically (every 1.5-2.5 seconds)
-      if (now - lastHeartTimeRef.current > 1500 + Math.random() * 1000) {
-        if (hearts.filter(h => !h.collected).length < 3) {
+      // Spawn hearts more frequently for 100 target
+      if (now - lastHeartTimeRef.current > 800 + Math.random() * 600) {
+        if (hearts.filter(h => !h.collected).length < 5) {
           spawnHeart();
         }
         lastHeartTimeRef.current = now;
@@ -172,7 +274,6 @@ const GameScreen = memo(({ onComplete }: GameScreenProps) => {
           
           const newX = heart.x - GAME_SPEED;
           
-          // Collision detection (generous hitbox)
           const horseX = 100;
           const horseTop = HORSE_BOTTOM + horseY;
           const horseBottom = HORSE_BOTTOM + horseY + 80;
@@ -189,7 +290,7 @@ const GameScreen = memo(({ onComplete }: GameScreenProps) => {
             setHeartsCollected(c => {
               const newCount = c + 1;
               if (newCount >= HEARTS_NEEDED) {
-                setTimeout(onComplete, 500);
+                setTimeout(onComplete, 1000);
               }
               return newCount;
             });
@@ -200,7 +301,6 @@ const GameScreen = memo(({ onComplete }: GameScreenProps) => {
         }).filter(heart => heart.x > -50 || heart.collected);
       });
 
-      // Animate ground scroll
       setGroundOffset(prev => (prev + GAME_SPEED) % 100);
       
       gameLoopRef.current = requestAnimationFrame(gameLoop);
@@ -213,12 +313,14 @@ const GameScreen = memo(({ onComplete }: GameScreenProps) => {
         cancelAnimationFrame(gameLoopRef.current);
       }
     };
-  }, [horseY, onComplete, spawnHeart, hearts]);
+  }, [horseY, onComplete, spawnHeart, hearts, isPaused]);
 
   return (
     <div 
       ref={gameContainerRef}
-      className="relative min-h-screen w-full overflow-hidden bg-valentine-sky cursor-pointer select-none"
+      className={`relative min-h-screen w-full overflow-hidden cursor-pointer select-none transition-all duration-1000 ${
+        isNearEnd ? 'bg-gradient-to-b from-pink-200 via-pink-100 to-pink-50' : 'bg-valentine-sky'
+      }`}
       onClick={handleJump}
     >
       {/* Background clouds */}
@@ -232,17 +334,18 @@ const GameScreen = memo(({ onComplete }: GameScreenProps) => {
       <FloatingHeart left="75%" top="20%" size={24} delay={0.5} opacity={0.3} />
       <FloatingHeart left="45%" top="30%" size={18} delay={1} opacity={0.25} />
 
+      {/* Floating romantic text */}
+      <FloatingText triggerChange={heartsCollected} />
+
       {/* UI - Hearts counter */}
       <div className="absolute top-4 left-4 z-20 bg-card/80 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-soft">
         <div className="flex items-center gap-2 font-display text-lg text-foreground">
-          <span className="text-2xl">❤️</span>
+          <span className={`text-2xl ${isNearEnd ? 'animate-pulse' : ''}`}>❤️</span>
           <span>{heartsCollected} / {HEARTS_NEEDED}</span>
         </div>
-        {currentMessage && (
-          <p className="text-sm text-muted-foreground font-body mt-1 animate-fade-in-up">
-            {currentMessage}
-          </p>
-        )}
+        <p className="text-xs text-muted-foreground font-body mt-1">
+          every heart brings you closer to me
+        </p>
       </div>
 
       {/* Mute button */}
@@ -260,6 +363,24 @@ const GameScreen = memo(({ onComplete }: GameScreenProps) => {
         )}
       </button>
 
+      {/* Milestone Popup */}
+      <MilestonePopup 
+        message={currentMilestone || ''} 
+        isVisible={showMilestone}
+        onDismiss={handleMilestoneDismiss}
+      />
+
+      {/* Question Modal */}
+      {currentQuestion && (
+        <QuestionModal
+          title={currentQuestion.title}
+          options={currentQuestion.options}
+          onAnswer={handleQuestionAnswer}
+          isVisible={true}
+          requireCorrect={currentQuestion.requireCorrect}
+        />
+      )}
+
       {/* Game area */}
       <div className="absolute inset-0">
         {/* Collectible hearts */}
@@ -269,6 +390,7 @@ const GameScreen = memo(({ onComplete }: GameScreenProps) => {
             x={heart.x}
             y={heart.y}
             collected={heart.collected}
+            isPulsing={isNearEnd}
           />
         ))}
 
@@ -280,7 +402,7 @@ const GameScreen = memo(({ onComplete }: GameScreenProps) => {
             transition: 'none',
           }}
         >
-          <Horse isJumping={isJumping} isRunning={!isJumping} />
+          <Horse isJumping={isJumping} isRunning={!isJumping && !isPaused} />
         </div>
       </div>
 

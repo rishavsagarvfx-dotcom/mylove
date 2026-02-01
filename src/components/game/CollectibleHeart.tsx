@@ -5,9 +5,10 @@ interface CollectibleHeartProps {
   y: number;
   collected: boolean;
   onCollect?: () => void;
+  isPulsing?: boolean;
 }
 
-const CollectibleHeart = memo(({ x, y, collected }: CollectibleHeartProps) => {
+const CollectibleHeart = memo(({ x, y, collected, isPulsing }: CollectibleHeartProps) => {
   const [showPop, setShowPop] = useState(false);
 
   // Trigger pop animation when collected
@@ -53,7 +54,7 @@ const CollectibleHeart = memo(({ x, y, collected }: CollectibleHeartProps) => {
 
   return (
     <div
-      className="absolute pointer-events-none heart-pulse"
+      className={`absolute pointer-events-none ${isPulsing ? 'heart-pulse animate-pulse' : 'heart-pulse'}`}
       style={{
         left: `${x}px`,
         bottom: `${y}px`,
