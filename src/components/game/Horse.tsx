@@ -27,7 +27,7 @@ const Horse = memo(({ isJumping, isRunning, isCelebrating }: HorseProps) => {
         src={horseImage} 
         alt="Cute pink horse" 
         className="w-full h-full object-contain drop-shadow-lg"
-        style={{ transform: 'scaleX(-1)' }} // Face right
+        // Horse now faces right (original orientation)
       />
       
       {/* Sparkle trail when jumping */}
