@@ -62,7 +62,7 @@ const questions: QuestionConfig[] = [
     subtitle: "Who wins at chess?",
     options: [
       { label: "You", emoji: "♟️" },
-      { label: "Me (after pretending I don't know how to play)", emoji: "😏" },
+      { label: "Me (when I eat your chess pieces when you look the other way)", emoji: "😋" },
     ],
     // Accept either - no requireCorrect
   },

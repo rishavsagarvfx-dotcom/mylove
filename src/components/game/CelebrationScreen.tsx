@@ -1,8 +1,9 @@
-import { memo, useState } from 'react';
+import { memo, useState, useEffect, useRef } from 'react';
 import Confetti from './Confetti';
 import FloatingHeart from './FloatingHeart';
 import Sparkle from './Sparkle';
 import Horse from './Horse';
+import { Volume2, VolumeX } from 'lucide-react';
 
 interface CelebrationScreenProps {
   onPlayAgain: () => void;
@@ -11,6 +12,36 @@ interface CelebrationScreenProps {
 const CelebrationScreen = memo(({ onPlayAgain }: CelebrationScreenProps) => {
   const [horseTaps, setHorseTaps] = useState(0);
   const [showEasterEgg, setShowEasterEgg] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Initialize and play audio
+  useEffect(() => {
+    audioRef.current = new Audio('/audio/background-music.mp3');
+    audioRef.current.loop = true;
+    audioRef.current.volume = 0.3;
+    audioRef.current.play().catch(() => {});
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  const toggleMute = () => {
+    setIsMuted(prev => {
+      if (audioRef.current) {
+        if (prev) {
+          audioRef.current.play();
+        } else {
+          audioRef.current.pause();
+        }
+      }
+      return !prev;
+    });
+  };
 
   const handleHorseTap = () => {
     const newTaps = horseTaps + 1;
@@ -22,6 +53,17 @@ const CelebrationScreen = memo(({ onPlayAgain }: CelebrationScreenProps) => {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-valentine-sky flex items-center justify-center">
+      {/* Mute button */}
+      <button
+        onClick={toggleMute}
+        className="absolute top-4 right-4 z-20 bg-card/80 backdrop-blur-sm rounded-full p-3 shadow-soft hover:scale-110 transition-transform"
+      >
+        {isMuted ? (
+          <VolumeX className="w-5 h-5 text-muted-foreground" />
+        ) : (
+          <Volume2 className="w-5 h-5 text-primary" />
+        )}
+      </button>
       {/* Confetti */}
       <Confetti />
 
