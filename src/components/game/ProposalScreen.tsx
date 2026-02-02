@@ -62,7 +62,7 @@ const ProposalScreen = memo(({ onAccept }: ProposalScreenProps) => {
       {/* Main question */}
       {showQuestion && (
         <h1 className="font-display text-3xl md:text-4xl lg:text-5xl text-foreground mb-8 text-shadow-glow animate-bounce-in">
-          So… will you be my Valentine?
+          So… Zaina, will you be my Valentine?
         </h1>
       )}
 
